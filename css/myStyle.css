@@ -1,0 +1,27 @@
+table td {
+    position: relative;
+}
+
+table td input {
+    position: absolute; !important;
+    display: block; !important;
+    top:0; !important;
+    left:0; !important;
+    margin: 0; !important;
+    border: none; !important;
+    padding: 10px; !important;
+    box-sizing: border-box; !important;
+}
+
+table td .form-control{
+    height: calc(100% - 0.4rem); !important;
+    width: calc(100% - 0.4rem); !important;
+    margin: 0.2rem 0 0 0.2rem;
+    border-radius: 1px;
+    border: none;!important;
+}
+
+.form-control.form-control-sm{
+    margin-right: 0.2rem;
+    margin-top: 0.2rem;
+}
