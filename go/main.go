@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/harry1453/go-common-file-dialog/cfd"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -43,7 +43,7 @@ func main() {
 	mux.Handle("/scss/", http.StripPrefix("/scss/", http.FileServer(http.Dir("./scss"))))
 	mux.Handle("/vendor/", http.StripPrefix("/vendor/", http.FileServer(http.Dir("./vendor"))))
 	// site
-	mux.HandleFunc("/submit-files", FileHandler)
+	mux.HandleFunc("/choose-files", chooseFilesHandler)
 	mux.HandleFunc("/", indexHandler)
 	_ = http.ListenAndServe(":8080", mux)
 }
@@ -62,22 +62,34 @@ func ifErrorToPage(w io.Writer, err error) {
 	}
 }
 
-func FileHandler(w http.ResponseWriter, r *http.Request){
+func chooseFilesHandler(w http.ResponseWriter, r *http.Request){
 	err := r.ParseForm()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	fmt.Println(r.PostForm)
+	_, err = w.Write([]byte(getFilesInDirectory()))
+	if err != nil {
+		return
+	}
 }
 
-func getFilesInDirectory(dir string) {
-	files, err := ioutil.ReadDir(dir)
+func getFilesInDirectory()string {
+	pickFolderDialog, err := cfd.NewSelectFolderDialog(cfd.DialogConfig{
+		Title: "Pick Folder",
+		Role:  "PickFolderExample",
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	for _, f := range files {
-		fmt.Println(f.Name())
+	if err := pickFolderDialog.Show(); err != nil {
+		log.Fatal(err)
 	}
+	result, err := pickFolderDialog.GetResult()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Chosen folder: %s\n", result)
+	return result
 }
