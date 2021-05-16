@@ -16,7 +16,6 @@
     <link href="/css/myStyle.css" rel="stylesheet">
     <!-- Custom styles for this page -->
     <link href="/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-
 </head>
 <body id="page-top">
 <div id="wrapper">
@@ -70,13 +69,11 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {{ range .Files }}
                                 <tr>
-                                    <td>{{ .Path }}</td>
-                                    <td>{{ .Name }}</td>
+                                    <td>No file(s) selected</td>
+                                    <td>No file(s) selected</td>
                                     <td><input class="form-control" type="text"></td>
                                 </tr>
-                                {{ end }}
                                 </tbody>
                             </table>
                         </div>

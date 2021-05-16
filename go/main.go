@@ -25,7 +25,6 @@ type file struct {
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{
 		Title: "File Rename Helper ;D",
-		Files: []file{{"No file(s) selected", ""}},
 	}
 
 	t, err := template.ParseFiles("templates/index.html")
