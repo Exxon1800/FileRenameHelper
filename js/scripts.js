@@ -1,5 +1,6 @@
 const chooseFileButton = $('#choose-file-button');
 const fileChosen = $('#file-chosen');
+const filesTable = $("#dataTable")
 var files
 
 chooseFileButton.on('click', function(){
@@ -15,12 +16,5 @@ chooseFileButton.on('click', function(){
 });
 
 function addFileToTable(file){
-    $('#dataTable tr:last').after(`    
-    <tr>
-        <td>${file.Path}</td>
-        <td>${file.Name}</td>
-        <td><input className="form-control" type="text"></td>
-    </tr>
-    `);
-
+    filesTable.DataTable().row.add([file.Path, file.Name, "<input class=\"form-control\" type=\"text\">"]).draw( false );
 }
