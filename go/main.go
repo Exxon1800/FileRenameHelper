@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/harry1453/go-common-file-dialog/cfd"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type Page struct {
@@ -16,15 +18,14 @@ type Page struct {
 }
 
 type file struct {
-	Name string
 	Path string
+	Name string
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{
 		Title: "File Rename Helper ;D",
-		Body:  "hi",
-		Files: []file{{"file1", ""}, {"file2", ""}, {"file3", ""}},
+		Files: []file{{"No file(s) selected", ""}},
 	}
 
 	t, err := template.ParseFiles("templates/index.html")
@@ -63,19 +64,19 @@ func ifErrorToPage(w io.Writer, err error) {
 }
 
 func chooseFilesHandler(w http.ResponseWriter, r *http.Request){
-	err := r.ParseForm()
+	filesJSON, err := json.Marshal(getFilesInDirectory())
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
-	fmt.Println(r.PostForm)
-	_, err = w.Write([]byte(getFilesInDirectory()))
+	_, err = w.Write(filesJSON)
 	if err != nil {
 		return
 	}
 }
 
-func getFilesInDirectory()string {
+func getFilesInDirectory()[]file {
 	pickFolderDialog, err := cfd.NewSelectFolderDialog(cfd.DialogConfig{
 		Title: "Pick Folder",
 		Role:  "PickFolderExample",
@@ -91,5 +92,16 @@ func getFilesInDirectory()string {
 		log.Fatal(err)
 	}
 	log.Printf("Chosen folder: %s\n", result)
-	return result
+
+	return []file{
+		{
+			Name: getFileNameFromPath(result),
+			Path:        result,
+		},
+	}
+}
+
+func getFileNameFromPath(path string)string{
+	strArr :=strings.Split(path,"\\")
+	return strArr[len(strArr)-1]
 }
