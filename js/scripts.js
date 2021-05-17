@@ -1,6 +1,6 @@
 const chooseFileButton = $('#choose-file-button');
-const fileChosen = $('#file-chosen');
 const filesTable = $("#dataTable").DataTable()
+const fileChosen = $('#file-chosen')[0];
 var files
 
 chooseFileButton.on('click', function(){
