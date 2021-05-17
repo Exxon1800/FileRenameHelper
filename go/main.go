@@ -19,6 +19,7 @@ type Page struct {
 
 type file struct {
 	Path string
+	TruncatedPath string
 	Name string
 }
 
@@ -112,6 +113,7 @@ func getFilesInDirectory()(files []file) {
 	for _, result := range results {
 		files = append(files, file{
 			Path: result,
+			TruncatedPath:truncatePath(result),
 			Name: getFileNameFromPath(result),
 		})
 	}
@@ -123,4 +125,7 @@ func getFileNameFromPath(path string)string{
 	strArr := strings.Split(path,"\\")
 	return strArr[len(strArr)-1]
 }
+
+func truncatePath(path string)string{
+	return strings.TrimSuffix(path, getFileNameFromPath(path))
 }
