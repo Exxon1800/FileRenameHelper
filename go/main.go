@@ -21,6 +21,7 @@ type file struct {
 	Path string
 	TruncatedPath string
 	Name string
+	Extention string
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -115,6 +116,7 @@ func getFilesInDirectory()(files []file) {
 			Path: result,
 			TruncatedPath:truncatePath(result),
 			Name: getFileNameFromPath(result),
+			Extention: getExtention(result),
 		})
 	}
 
@@ -128,4 +130,9 @@ func getFileNameFromPath(path string)string{
 
 func truncatePath(path string)string{
 	return strings.TrimSuffix(path, getFileNameFromPath(path))
+}
+
+func getExtention(path string)string{
+	strArr := strings.Split(path,".")
+	return strArr[len(strArr)-1]
 }
