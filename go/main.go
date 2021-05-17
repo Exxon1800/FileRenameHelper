@@ -75,29 +75,34 @@ func chooseFilesHandler(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func getFilesInDirectory()[]file {
-	pickFolderDialog, err := cfd.NewSelectFolderDialog(cfd.DialogConfig{
-		Title: "Pick Folder",
+func getFilesInDirectory()(files []file) {
+	pickFolderDialog, err := cfd.NewOpenMultipleFilesDialog(cfd.DialogConfig{
+		Title: "Pick File(s)",
 		Role:  "PickFolderExample",
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := pickFolderDialog.Show(); err != nil {
-		log.Fatal(err)
-	}
-	result, err := pickFolderDialog.GetResult()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Chosen folder: %s\n", result)
 
-	return []file{
-		{
-			Name: getFileNameFromPath(result),
-			Path:        result,
-		},
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	if err = pickFolderDialog.Show(); err != nil {
+		log.Fatal(err)
+	}
+
+	results, err := pickFolderDialog.GetResults()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Chosen files: %s\n", results)
+
+	for _, result := range results {
+		files = append(files, file{
+			Path: result,
+			Name: getFileNameFromPath(result),
+		})
+	}
+
+	return files
 }
 
 func getFileNameFromPath(path string)string{

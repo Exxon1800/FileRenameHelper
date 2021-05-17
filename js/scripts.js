@@ -5,8 +5,8 @@ var files
 
 chooseFileButton.on('click', function(){
     $.get('/choose-files', function(data){
+        filesTable.clear().draw();
         files = JSON.parse(data);
-
         fileChosen.textContent = files.length + (files.length > 1 ? " files chosen" : " file chosen")
         files.forEach(file => addFileToTable(file))
     }).fail(function() {
@@ -16,6 +16,5 @@ chooseFileButton.on('click', function(){
 });
 
 function addFileToTable(file){
-    filesTable.clear().draw();
     filesTable.row.add([file.Path, file.Name, "<input class=\"form-control\" type=\"text\">"]).draw( false );
 }
