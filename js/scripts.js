@@ -16,5 +16,5 @@ chooseFileButton.on('click', function(){
 });
 
 function addFileToTable(file){
-    filesTable.row.add([file.Path, file.Name, "<input class=\"form-control\" type=\"text\">"]).draw( false );
+    filesTable.row.add([file.TruncatedPath, file.Name, "<input class=\"form-control\" type=\"text\">"]).draw( false );
 }
