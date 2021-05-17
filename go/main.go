@@ -76,24 +76,38 @@ func chooseFilesHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func getFilesInDirectory()(files []file) {
-	pickFolderDialog, err := cfd.NewOpenMultipleFilesDialog(cfd.DialogConfig{
-		Title: "Pick File(s)",
-		Role:  "PickFolderExample",
+	openMultiDialog, err := cfd.NewOpenMultipleFilesDialog(cfd.DialogConfig{
+		Title:         "Open Multiple Files",
+		Role:          "OpenFilesExample",
+		FileFilters: []cfd.FileFilter{
+			{
+				DisplayName: "Text Files (*.txt)",
+				Pattern:     "*.txt",
+			},
+			{
+				DisplayName: "Image Files (*.jpg, *.png)",
+				Pattern:     "*.jpg;*.png",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+		SelectedFileFilterIndex: 2,
+		FileName:                "file.txt",
+		DefaultExtension:        "txt",
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if err = pickFolderDialog.Show(); err != nil {
+	if err := openMultiDialog.Show(); err != nil {
 		log.Fatal(err)
 	}
-
-	results, err := pickFolderDialog.GetResults()
+	results, err := openMultiDialog.GetResults()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Chosen files: %s\n", results)
+	log.Printf("Chosen file(s): %s\n", results)
 
 	for _, result := range results {
 		files = append(files, file{
@@ -106,6 +120,7 @@ func getFilesInDirectory()(files []file) {
 }
 
 func getFileNameFromPath(path string)string{
-	strArr :=strings.Split(path,"\\")
+	strArr := strings.Split(path,"\\")
 	return strArr[len(strArr)-1]
+}
 }
