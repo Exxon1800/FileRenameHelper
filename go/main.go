@@ -107,7 +107,8 @@ func getFilesInDirectory()(files []file) {
 	}
 	results, err := openMultiDialog.GetResults()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return nil
 	}
 	log.Printf("Chosen file(s): %s\n", results)
 

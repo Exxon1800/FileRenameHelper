@@ -2,7 +2,7 @@ table td {
     position: relative;
 }
 
-table td input {
+.newFileNameInput {
     position: absolute; !important;
     display: block; !important;
     top:0; !important;
@@ -24,4 +24,14 @@ table td .form-control{
 .form-control.form-control-sm{
     margin-right: 0.2rem;
     margin-top: 0.2rem;
+}
+
+.big-checkbox {
+    width: 20px;
+    height: 20px;
+
+}
+
+.checkboxPadding{
+    padding: 0.30em; !important
 }
