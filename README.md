@@ -1,2 +1,2 @@
 # FileRenameHelper
- Rename mulitple files easily in a list view
+ Rename mulitple files easily
