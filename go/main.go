@@ -19,10 +19,10 @@ type Page struct {
 }
 
 type file struct {
-	Path string
+	Path          string
 	TruncatedPath string
-	Name string
-	Extention string
+	Name          string
+	Extension     string
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -39,6 +39,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := mux.NewRouter()
+	r.HandleFunc("/choose-files", chooseFilesHandler).Methods("GET")
 	r.HandleFunc("/", indexHandler).Methods("GET")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./")))
 	http.Handle("/", r)
@@ -59,7 +60,7 @@ func ifErrorToPage(w io.Writer, err error) {
 	}
 }
 
-func chooseFilesHandler(w http.ResponseWriter, r *http.Request){
+func chooseFilesHandler(w http.ResponseWriter, r *http.Request) {
 	filesJSON, err := json.Marshal(getFilesInDirectory())
 	if err != nil {
 		fmt.Println(err)
@@ -72,10 +73,10 @@ func chooseFilesHandler(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func getFilesInDirectory()(files []file) {
+func getFilesInDirectory() (files []file) {
 	openMultiDialog, err := cfd.NewOpenMultipleFilesDialog(cfd.DialogConfig{
-		Title:         "Open Multiple Files",
-		Role:          "OpenFilesExample",
+		Title: "Open Multiple Files",
+		Role:  "OpenFilesExample",
 		FileFilters: []cfd.FileFilter{
 			{
 				DisplayName: "Text Files (*.txt)",
@@ -109,26 +110,28 @@ func getFilesInDirectory()(files []file) {
 
 	for _, result := range results {
 		files = append(files, file{
-			Path: result,
-			TruncatedPath:truncatePath(result),
-			Name: getFileNameFromPath(result),
-			Extention: getExtention(result),
+			Path:          result,
+			TruncatedPath: truncatePath(result),
+			Name:          getFileNameFromPath(result),
+			Extension:     getExtention(result),
 		})
 	}
 
 	return files
 }
 
-func getFileNameFromPath(path string)string{
-	strArr := strings.Split(path,"\\")
+func getFileNameFromPath(path string) string {
+	strArr := strings.Split(path, "\\")
+
 	return strArr[len(strArr)-1]
 }
 
-func truncatePath(path string)string{
+func truncatePath(path string) string {
 	return strings.TrimSuffix(path, getFileNameFromPath(path))
 }
 
-func getExtention(path string)string{
-	strArr := strings.Split(path,".")
+func getExtention(path string) string {
+	strArr := strings.Split(path, ".")
+
 	return strArr[len(strArr)-1]
 }
