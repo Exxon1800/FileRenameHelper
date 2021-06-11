@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/harry1453/go-common-file-dialog/cfd"
 	"html/template"
 	"io"
@@ -37,17 +38,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	mux := http.NewServeMux()
-	// libs
-	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./css"))))
-	mux.Handle("/img/", http.StripPrefix("/img/", http.FileServer(http.Dir("./img"))))
-	mux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("./js"))))
-	mux.Handle("/scss/", http.StripPrefix("/scss/", http.FileServer(http.Dir("./scss"))))
-	mux.Handle("/vendor/", http.StripPrefix("/vendor/", http.FileServer(http.Dir("./vendor"))))
-	// site
-	mux.HandleFunc("/choose-files", chooseFilesHandler)
-	mux.HandleFunc("/", indexHandler)
-	_ = http.ListenAndServe(":8080", mux)
+	r := mux.NewRouter()
+	r.HandleFunc("/", indexHandler).Methods("GET")
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./")))
+	http.Handle("/", r)
+	_ = http.ListenAndServe(":8080", nil)
 }
 
 func ifErrorToPage(w io.Writer, err error) {
