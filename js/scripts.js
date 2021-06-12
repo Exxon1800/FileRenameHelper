@@ -1,18 +1,28 @@
 const chooseFileButton = $('#choose-file-button');
+const RenameSelectedFilesButton = $('#rename-selected-files-button');
+const selectedPrefix = "selected-"
+const newNamePrefix = "new-name-"
 const filesTable = $("#dataTable").DataTable({
     "order": [[1, "desc"]],
     "columnDefs": [{"orderable": false, "targets": 0}],
 });
 const fileChosen = $('#file-chosen')[0];
-var files
+
+let rawFiles
+let files = new Map();
 
 chooseFileButton.on('click', function () {
     $.get('/choose-files', function (data) {
         filesTable.clear().draw();
-        files = JSON.parse(data);
-        if (files) {
-            fileChosen.textContent = files.length + (files.length > 1 ? " files chosen" : " file chosen")
-            files.forEach(file => addFileToTable(file))
+        rawFiles = JSON.parse(data);
+        if (rawFiles) {
+            files.clear()
+            fileChosen.textContent = rawFiles.length + (rawFiles.length > 1 ? " files chosen" : " file chosen")
+            rawFiles.forEach(function (file, i) {
+                rawFiles[i].UUID = UUIDv4()
+                files.set(rawFiles[i].UUID, file)
+                addFileToTable(file)
+            })
         }
     }).fail(function () {
         console.error("could not get files")
@@ -20,16 +30,41 @@ chooseFileButton.on('click', function () {
     })
 });
 
+// addFileToTable adds the file to the table by adding a new row to th filesTable
+// in this row it adds a checkbox with a selectedPrefix + file.UUID as id to later identify the checkbox
+// in this row it also adds a input field for the new name and newNamePrefix + file.UUID to identify the input field
 function addFileToTable(file) {
-    let selectedForRenameId = file.Name + "selected"
-    let newFileNameId = file.Name + "newName"
     filesTable.row.add([
-        `<input type="checkbox" class="select-item checkbox big-checkbox" name="select-item" value="${selectedForRenameId}" />`,
+        `<input type="checkbox" id="${selectedPrefix}${file.UUID}" class="select-item checkbox big-checkbox" name="select-item" />`,
         file.TruncatedPath,
         file.Name,
-        `<input id="${newFileNameId}" class="form-control newFileNameInput" type="text" value="${file.Name}">`
+        `<input id="${newNamePrefix}${file.UUID}" class="form-control newFileNameInput" type="text" onchange="handleNewFileNameInput(this)" value="${file.Name}">`
     ]).draw(false);
 }
+
+function handleNewFileNameInput(elem) {
+    let newName = elem.value
+    let UUID = elem.id.replace(newNamePrefix, "")
+    files.get(UUID).NewName = newName
+}
+
+RenameSelectedFilesButton.on('click', function () {
+    let selectedFiles = []
+    let selectedItemElements = $('.select-item:checkbox:checked')
+
+    selectedItemElements.each(function(i, elem) {
+        let UUID = elem.id.replace(selectedPrefix, "")
+        selectedFiles.push(files.get(UUID))
+    });
+
+    $.ajax({
+        type: "post",
+        url: '/rename-selected-files',
+        data: JSON.stringify(selectedFiles),
+        dataType: 'json',
+        contentType: 'application/json',
+    });
+})
 
 // checkboxes
 $(function () {
@@ -58,3 +93,11 @@ $(function () {
         all.checked = len === total;
     });
 });
+
+
+function UUIDv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}

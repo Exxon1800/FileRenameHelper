@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/harry1453/go-common-file-dialog/cfd"
+	log "github.com/sirupsen/logrus"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -19,15 +19,17 @@ type Page struct {
 }
 
 type file struct {
+	UUID          string
 	Path          string
 	TruncatedPath string
 	Name          string
 	Extension     string
+	NewName       string
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{
-		Title: "File Rename Helper ;D",
+		Title: "file Rename Helper ;D",
 	}
 
 	t, err := template.ParseFiles("templates/index.html")
@@ -40,15 +42,31 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/choose-files", chooseFilesHandler).Methods("GET")
+	r.HandleFunc("/rename-selected-files", renameSelectedFilesHandler).Methods("POST")
+	
 	r.HandleFunc("/", indexHandler).Methods("GET")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./")))
 	http.Handle("/", r)
 	_ = http.ListenAndServe(":8080", nil)
 }
 
+func renameSelectedFilesHandler(w http.ResponseWriter, r *http.Request) {
+	var selectedFiles []file
+
+	if err := json.NewDecoder(r.Body).Decode(&selectedFiles);err != nil {
+		http.Error(w, err.Error(), 400)
+		GetLogger(r).WithError(err)
+
+		return
+	}
+
+	fmt.Println(selectedFiles)
+}
+
 func ifErrorToPage(w io.Writer, err error) {
 	if err != nil {
 		t, e := template.ParseFiles("templates/Error.html")
+
 		if e != nil {
 			fmt.Println(e)
 		}
@@ -64,6 +82,7 @@ func chooseFilesHandler(w http.ResponseWriter, r *http.Request) {
 	filesJSON, err := json.Marshal(getFilesInDirectory())
 	if err != nil {
 		fmt.Println(err)
+
 		return
 	}
 
@@ -98,14 +117,18 @@ func getFilesInDirectory() (files []file) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if err := openMultiDialog.Show(); err != nil {
 		log.Fatal(err)
 	}
+
 	results, err := openMultiDialog.GetResults()
 	if err != nil {
 		fmt.Println(err)
+
 		return nil
 	}
+
 	log.Printf("Chosen file(s): %s\n", results)
 
 	for _, result := range results {
@@ -134,4 +157,8 @@ func getExtention(path string) string {
 	strArr := strings.Split(path, ".")
 
 	return strArr[len(strArr)-1]
+}
+
+func GetLogger(r *http.Request) *log.Entry {
+	return r.Context().Value("logger").(*log.Entry)
 }
