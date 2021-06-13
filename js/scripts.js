@@ -34,11 +34,20 @@ chooseFileButton.on('click', function () {
 // in this row it adds a checkbox with a selectedPrefix + file.UUID as id to later identify the checkbox
 // in this row it also adds a input field for the new name and newNamePrefix + file.UUID to identify the input field
 function addFileToTable(file) {
+    let validWindowsFileName = `^[a-zA-Z0-9._ -]+$`
+    // let validWindowsFileName = `^(?:[a-z]:)?[\\\/\\\\]{0,2}`
     filesTable.row.add([
         `<input type="checkbox" id="${selectedPrefix}${file.UUID}" class="select-item checkbox big-checkbox" name="select-item" />`,
         file.TruncatedPath,
         file.Name,
-        `<input id="${newNamePrefix}${file.UUID}" class="form-control newFileNameInput" type="text" onchange="handleNewFileNameInput(this)" value="${file.Name}">`
+        `
+        <input id="${newNamePrefix}${file.UUID}" 
+        class="form-control newFileNameInput" 
+        type="text" 
+        onchange="handleNewFileNameInput(this); this.reportValidity()" 
+        pattern="${validWindowsFileName}" 
+        value="${file.Name}">
+        `
     ]).draw(false);
 }
 
@@ -52,10 +61,12 @@ RenameSelectedFilesButton.on('click', function () {
     let selectedFiles = []
     let selectedItemElements = $('.select-item:checkbox:checked')
 
-    selectedItemElements.each(function(i, elem) {
+    selectedItemElements.each(function (i, elem) {
         let UUID = elem.id.replace(selectedPrefix, "")
         selectedFiles.push(files.get(UUID))
     });
+
+    checkForDuplicates()
 
     $.ajax({
         type: "post",
@@ -65,6 +76,33 @@ RenameSelectedFilesButton.on('click', function () {
         contentType: 'application/json',
     });
 })
+
+function checkForDuplicates(selectedFiles) {
+    let duplicates = getDuplicateFiles(selectedFiles)
+    duplicates.forEach(duplicate => {
+        getNewNameInputElementByUUID(duplicate.UUID).addClass("has-input-error")
+    })
+}
+
+function getNewNameInputElementByUUID(UUID) {
+    return $('#' + newNamePrefix + UUID)
+}
+
+function getDuplicateFiles(selectedFiles) {
+    let duplicates = []
+
+    if (selectedFiles && selectedFiles.length > 0) {
+        selectedFiles.forEach(file1 => {
+            selectedFiles.forEach(file2 => {
+                if (file1.NewName === file2.NewName) {
+                    duplicates.push(file1, file2)
+                }
+            })
+        })
+    }
+
+    return duplicates
+}
 
 // checkboxes
 $(function () {

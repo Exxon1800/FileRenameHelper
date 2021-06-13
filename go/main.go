@@ -16,10 +16,10 @@ import (
 type Page struct {
 	Title string
 	Body  string
-	Files []osFile
+	Files []systemFile
 }
 
-type osFile struct {
+type systemFile struct {
 	UUID          string
 	Path          string
 	TruncatedPath string
@@ -30,7 +30,7 @@ type osFile struct {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{
-		Title: "osFile Rename Helper ;D",
+		Title: "systemFile Rename Helper ;D",
 	}
 
 	t, err := template.ParseFiles("templates/index.html")
@@ -52,7 +52,7 @@ func main() {
 }
 
 func renameSelectedFilesHandler(_ http.ResponseWriter, r *http.Request) {
-	var selectedFiles []osFile
+	var selectedFiles []systemFile
 
 	err := json.NewDecoder(r.Body).Decode(&selectedFiles)
 	if logIfError(r, err){
@@ -64,7 +64,7 @@ func renameSelectedFilesHandler(_ http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Selected osFile(s): %s\n", selectedFiles)
+	log.Printf("Selected systemFile(s): %s\n", selectedFiles)
 }
 
 func chooseFilesHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func chooseFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getFilesInDirectory() (files []osFile, err error) {
+func getFilesInDirectory() (files []systemFile, err error) {
 	var numberOfFileTypeFilters uint = 2
 
 	openMultiDialog, err := cfd.NewOpenMultipleFilesDialog(cfd.DialogConfig{
@@ -105,7 +105,7 @@ func getFilesInDirectory() (files []osFile, err error) {
 			},
 		},
 		SelectedFileFilterIndex: numberOfFileTypeFilters,
-		FileName:                "osFile.txt",
+		FileName:                "systemFile.txt",
 		DefaultExtension:        "txt",
 	})
 	if err != nil {
@@ -121,10 +121,10 @@ func getFilesInDirectory() (files []osFile, err error) {
 		return nil,  fmt.Errorf("could not get results from openMultiDialog %w", err)
 	}
 
-	log.Printf("Chosen osFile(s): %s\n", results)
+	log.Printf("Chosen systemFile(s): %s\n", results)
 
 	for _, result := range results {
-		files = append(files, osFile{
+		files = append(files, systemFile{
 			Path:          result,
 			TruncatedPath: truncatePath(result),
 			Name:          getFileNameFromPath(result),
@@ -135,21 +135,23 @@ func getFilesInDirectory() (files []osFile, err error) {
 	return files, nil
 }
 
-func renameFiles(files []osFile) error {
+func renameFiles(files []systemFile) error {
 	for _, file := range files {
-		newFilePath := file.TruncatedPath + file.NewName
+		if file.NewName != "" {
+			newFilePath := file.TruncatedPath + file.NewName
 
-		fileNameExists, err := checkIfFileNameExists(file)
-		if err != nil {
-			return err
-		}
-
-		fileNameIsUnchanged := newFilePath == file.Path
-
-		if !fileNameIsUnchanged && !fileNameExists{
-			err = os.Rename(file.Path, newFilePath)
+			fileNameExists, err := checkIfFileNameExists(file)
 			if err != nil {
-				return fmt.Errorf("could not rename osFile %w", err)
+				return err
+			}
+
+			fileNameIsUnchanged := newFilePath == file.Path
+
+			if !fileNameIsUnchanged && !fileNameExists {
+				err = os.Rename(file.Path, newFilePath)
+				if err != nil {
+					return fmt.Errorf("could not rename file: %v to %v, %w", file.Name, file.NewName, err)
+				}
 			}
 		}
 	}
@@ -157,7 +159,7 @@ func renameFiles(files []osFile) error {
 	return nil
 }
 
-func checkIfFileNameExists(newFile osFile) (bool, error) {
+func checkIfFileNameExists(newFile systemFile) (bool, error) {
 	f, err := os.Open(newFile.TruncatedPath)
 	if err != nil {
 		return false, err
