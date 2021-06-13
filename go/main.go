@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -33,56 +34,47 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t, err := template.ParseFiles("templates/index.html")
-	ifErrorToPage(w, err)
+	ifErrorToPage(w, r, err)
 
 	err = t.Execute(w, p)
-	ifErrorToPage(w, err)
+	ifErrorToPage(w, r, err)
 }
 
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/choose-files", chooseFilesHandler).Methods("GET")
 	r.HandleFunc("/rename-selected-files", renameSelectedFilesHandler).Methods("POST")
-	
+
 	r.HandleFunc("/", indexHandler).Methods("GET")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./")))
 	http.Handle("/", r)
 	_ = http.ListenAndServe(":8080", nil)
 }
 
-func renameSelectedFilesHandler(w http.ResponseWriter, r *http.Request) {
+func renameSelectedFilesHandler(_ http.ResponseWriter, r *http.Request) {
 	var selectedFiles []file
 
-	if err := json.NewDecoder(r.Body).Decode(&selectedFiles);err != nil {
-		http.Error(w, err.Error(), 400)
-		GetLogger(r).WithError(err)
-
+	err := json.NewDecoder(r.Body).Decode(&selectedFiles)
+	if logIfError(r, err){
 		return
 	}
 
-	fmt.Println(selectedFiles)
-}
-
-func ifErrorToPage(w io.Writer, err error) {
-	if err != nil {
-		t, e := template.ParseFiles("templates/Error.html")
-
-		if e != nil {
-			fmt.Println(e)
-		}
-
-		e = t.Execute(w, err)
-		if e != nil {
-			fmt.Println(e)
-		}
+	err = renameFiles(selectedFiles)
+	if logIfError(r, err){
+		return
 	}
+
+	log.Printf("Selected file(s): %s\n", selectedFiles)
 }
 
 func chooseFilesHandler(w http.ResponseWriter, r *http.Request) {
-	filesJSON, err := json.Marshal(getFilesInDirectory())
-	if err != nil {
-		fmt.Println(err)
+	files, err := getFilesInDirectory()
+	if logIfError(r, err) {
+		return
+	}
 
+	filesJSON, err := json.Marshal(files)
+	if logIfError(r, err) {
 		return
 	}
 
@@ -92,7 +84,9 @@ func chooseFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getFilesInDirectory() (files []file) {
+func getFilesInDirectory() (files []file, err error) {
+	var numberOfFileTypeFilters uint = 2
+
 	openMultiDialog, err := cfd.NewOpenMultipleFilesDialog(cfd.DialogConfig{
 		Title: "Open Multiple Files",
 		Role:  "OpenFilesExample",
@@ -110,23 +104,21 @@ func getFilesInDirectory() (files []file) {
 				Pattern:     "*.*",
 			},
 		},
-		SelectedFileFilterIndex: 2,
+		SelectedFileFilterIndex: numberOfFileTypeFilters,
 		FileName:                "file.txt",
 		DefaultExtension:        "txt",
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil,  fmt.Errorf("could not create NewOpenMultipleFilesDialog %w", err)
 	}
 
-	if err := openMultiDialog.Show(); err != nil {
-		log.Fatal(err)
+	if err = openMultiDialog.Show(); err != nil {
+		return nil,  fmt.Errorf("could not show openMultiDialog %w", err)
 	}
 
 	results, err := openMultiDialog.GetResults()
 	if err != nil {
-		fmt.Println(err)
-
-		return nil
+		return nil,  fmt.Errorf("could not get results from openMultiDialog %w", err)
 	}
 
 	log.Printf("Chosen file(s): %s\n", results)
@@ -136,11 +128,24 @@ func getFilesInDirectory() (files []file) {
 			Path:          result,
 			TruncatedPath: truncatePath(result),
 			Name:          getFileNameFromPath(result),
-			Extension:     getExtention(result),
+			Extension:     getExtension(result),
 		})
 	}
 
-	return files
+	return files, nil
+}
+
+func renameFiles(files []file) error {
+	for _, file := range files {
+		newFilePath := file.TruncatedPath + file.NewName
+		err := os.Rename(file.Path, newFilePath)
+
+		if err != nil {
+			return fmt.Errorf("could not rename file %w", err)
+		}
+	}
+
+	return nil
 }
 
 func getFileNameFromPath(path string) string {
@@ -153,7 +158,7 @@ func truncatePath(path string) string {
 	return strings.TrimSuffix(path, getFileNameFromPath(path))
 }
 
-func getExtention(path string) string {
+func getExtension(path string) string {
 	strArr := strings.Split(path, ".")
 
 	return strArr[len(strArr)-1]
@@ -161,4 +166,32 @@ func getExtention(path string) string {
 
 func GetLogger(r *http.Request) *log.Entry {
 	return r.Context().Value("logger").(*log.Entry)
+}
+
+func logError(r *http.Request, err error) *log.Entry {
+	return GetLogger(r).WithError(err)
+}
+
+func logIfError(r *http.Request, err error) bool {
+	if err != nil {
+		logError(r, err)
+
+		return true
+	}
+
+	return false
+}
+
+func ifErrorToPage(w io.Writer, r *http.Request, err error) {
+	if err != nil {
+		t, err := template.ParseFiles("templates/Error.html")
+		if logIfError(r, err) {
+			return
+		}
+
+		err = t.Execute(w, err)
+		if logIfError(r, err) {
+			return
+		}
+	}
 }
